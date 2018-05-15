@@ -33,7 +33,7 @@ def get_toolpath_annulus_data(params):
     tab_thickness = params['tab_thickness']
     step_size = params['step_size']
     margin = params['margin']
-    offset = params['offset']
+    offset_z = params['center_z'] + 0.5*diam_sphere
 
     # Get tool path data
     num_steps = get_num_steps(diam_sphere, tab_thickness, step_size, margin)
@@ -45,6 +45,6 @@ def get_toolpath_annulus_data(params):
             toolpath_radius = 0.25*diam_tool 
         else:
             toolpath_radius = get_toolpath_radius_from_step(diam_sphere, diam_tool, step, margin)
-        toolpath_data.append({'radius': toolpath_radius, 'z_step': step+offset})
+        toolpath_data.append({'radius': toolpath_radius, 'step_z': step+offset_z})
     return toolpath_data
 
