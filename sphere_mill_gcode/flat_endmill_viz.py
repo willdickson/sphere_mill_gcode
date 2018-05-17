@@ -55,10 +55,10 @@ if __name__ == '__main__':
 
     params = { 
             'diam_sphere'   : mm_to_inch(12.0),
-            'diam_tool'     : 1.0/8.0 ,
-            'margin'        : 0.01,
+            'diam_tool'     : 1.0/4.0 ,
+            'margin'        : 0.03,
             'step_size'     : 0.05,
-            'tab_thickness' : 0.01,
+            'tab_thickness' : 0.08,
             'center_z'      : -0.75/2,
             }
 

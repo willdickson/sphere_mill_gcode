@@ -76,8 +76,8 @@ def create_stockcut_program(params):
 
     for data in pocket_data:
         param = { 
-                'centerX'      : data['x'],
-                'centerY'      : data['y'],
+                'centerX'      : data['x'] + 0.5*data['w'],
+                'centerY'      : data['y'] + 0.5*data['h'],
                 'width'        : data['w'],
                 'height'       : data['h'],
                 'depth'        : thickness + overcut,
@@ -458,12 +458,6 @@ def plot_tabcut(params,color='y'):
 
 
 
-
-
-        
-
-
-
 def plot_sphere_array(params, fignum=1): 
     plt.figure(fignum)
     plot_pocket_centers(params)
@@ -514,25 +508,13 @@ if __name__ == '__main__':
         'num_y'          : 2,
         'diam_sphere'    : mm_to_inch(12.0),
         'num_tab'        : 3,
-        'tab_thickness'  : 0.02,
-        'tab_width'      : 0.1,
+        'tab_thickness'  : 0.08,
+        'tab_width'      : 0.15,
         'bridge_width'   : 0.2,
         'boundary_pad'   : 0.6,
         'center_z'       : -0.75/2.0,
         'safe_z'         : 0.25,
         'start_dwell'    : 2.0,
-        'roughing' : {
-            'feedrate'   : 60.0,
-            'diam_tool'  : 1.0/4.0,
-            'margin'     : 0.01,
-            'step_size'  : 0.05,
-            },
-        'finishing': {
-            'feedrate'   : 40.0,
-            'diam_tool'  : 1.0/8.0,
-            'margin'     : 0.0,
-            'step_size'  : 0.01,
-            },
         'stockcut': {
             'thickness'    : 0.75,
             'spacing_fact' : 1.25,
@@ -543,14 +525,26 @@ if __name__ == '__main__':
             'cut_sheet_y'  : 2.75,
             'feedrate'     : 100.0,
             'diam_tool'    : 3.0/8.0,
-            'step_size'    : 0.10,
+            'step_size'    : 0.15,
             },
         'jigcut': {
             'margin'    : 2.0,
-            'depth'     : 0.2,
+            'depth'     : 0.15,
             'feedrate'  : 100.0,
-            'diam_tool' : 0.5,
+            'diam_tool' : 1.5,
             'step_size' : 0.05,
+            },
+        'roughing' : {
+            'feedrate'   : 60.0,
+            'diam_tool'  : 1.0/4.0,
+            'margin'     : 0.03,
+            'step_size'  : 0.05,
+            },
+        'finishing': {
+            'feedrate'   : 40.0,
+            'diam_tool'  : 1.0/8.0,
+            'margin'     : 0.0,
+            'step_size'  : 0.01,
             },
         }
 
@@ -582,7 +576,7 @@ if __name__ == '__main__':
 
     if 1:
         plot_sphere_array(params,fignum=1)
-        #plot_stockcut(params,fignum=2)
+        plot_stockcut(params,fignum=2)
         plt.show()
 
 
