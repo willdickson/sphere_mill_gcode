@@ -3,10 +3,163 @@ from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import py2gcode.gcode_cmd as gcode_cmd
+import py2gcode.cnc_path as cnc_path
 import py2gcode.cnc_pocket as cnc_pocket
+import py2gcode.cnc_boundary as cnc_boundary
 
 import flat_endmill
 from utility import mm_to_inch
+from finishing_routine import SphereFinishingRoutine
+from arc_routine import ArcRoutine
+
+
+def create_jigcut_program(params):
+
+    prog = gcode_cmd.GCodeProg()
+    prog.add(gcode_cmd.GenericStart())
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.FeedRate(params['stockcut']['feedrate']))
+
+    margin = params['jigcut']['margin']
+    depth = params['jigcut']['depth']
+    safe_z = params['safe_z']
+    step_size = params['jigcut']['step_size']
+    diam_tool = params['jigcut']['diam_tool']
+    start_dwell = params['start_dwell']
+    dx = params['stockcut']['cut_sheet_x'] + margin
+    dy = params['stockcut']['cut_sheet_y'] + margin
+
+    cx = 0.5*dx
+    cy = 0.5*dy
+
+    param = {
+            'centerX'       : cx,
+            'centerY'       : cy,
+            'width'         : dx,
+            'height'        : dy,
+            'depth'         : depth,
+            'startZ'        : 0.0,
+            'safeZ'         : safe_z,
+            'overlap'       : 0.5,
+            'overlapFinish' : 0.5,
+            'maxCutDepth'   : step_size,
+            'toolDiam'      : diam_tool,
+            'cornerCut'     : True,
+            'direction'     : 'ccw',
+            'startDwell'    : start_dwell,
+            }
+    pocket = cnc_pocket.RectPocketXY(param)
+    prog.add(pocket)
+
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.End(),comment=True)
+    return prog
+
+
+
+def create_stockcut_program(params):
+
+    prog = gcode_cmd.GCodeProg()
+    prog.add(gcode_cmd.GenericStart())
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.FeedRate(params['stockcut']['feedrate']))
+
+    thickness = params['stockcut']['thickness']
+    overcut = params['stockcut']['overcut']
+    diam_tool = params['stockcut']['diam_tool']
+    step_size = params['stockcut']['step_size']
+    start_dwell = params['start_dwell']
+    start_z = 0.0 
+    safe_z = params['safe_z']
+
+    pocket_data = get_stockcut_pocket_data(params)
+
+    for data in pocket_data:
+        param = { 
+                'centerX'      : data['x'],
+                'centerY'      : data['y'],
+                'width'        : data['w'],
+                'height'       : data['h'],
+                'depth'        : thickness + overcut,
+                'radius'       : None,
+                'startZ'       : start_z,
+                'safeZ'        : safe_z,
+                'toolDiam'     : diam_tool,
+                'cutterComp'   : 'outside',
+                'direction'    : 'ccw',
+                'maxCutDepth'  : step_size,
+                'startDwell'   : start_dwell,
+                }
+        boundary = cnc_boundary.RectBoundaryXY(param)
+        prog.add(boundary)
+
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.End(),comment=True)
+    return prog
+
+
+def get_stockcut_pocket_data(params):
+    raw_sheet_x = params['stockcut']['raw_sheet_x']
+    raw_sheet_y = params['stockcut']['raw_sheet_y']
+    cut_sheet_x = params['stockcut']['cut_sheet_x']
+    cut_sheet_y = params['stockcut']['cut_sheet_y']
+    tool_diam = params['stockcut']['diam_tool']
+    spacing_fact = params['stockcut']['spacing_fact']
+
+    hole_dx = cut_sheet_x +  2*spacing_fact*tool_diam
+    hole_dy = cut_sheet_y +  2*spacing_fact*tool_diam
+
+    num_x = int(np.floor(raw_sheet_x/hole_dx))
+    num_y = int(np.floor(raw_sheet_y/hole_dy))
+
+    start_x = 0.5*raw_sheet_x - 0.5*num_x*hole_dx
+    start_y = 0.5*raw_sheet_y - 0.5*num_y*hole_dy
+
+    pocket_data = []
+    for i in range(num_x):
+        for j in range(num_y):
+            cx = start_x + i*hole_dx + spacing_fact*tool_diam 
+            cy = start_y + j*hole_dy + spacing_fact*tool_diam
+            pocket_data.append({ 'x': cx, 'y': cy, 'w': cut_sheet_x, 'h': cut_sheet_y })
+    return pocket_data
+
+
+
+def create_finishing_program(params):
+
+    prog = gcode_cmd.GCodeProg()
+    prog.add(gcode_cmd.GenericStart())
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.FeedRate(params['finishing']['feedrate']))
+
+    pos_list = pocket_centers(params)
+    toolpath_params = { 
+            'diam_sphere'   : params['diam_sphere'],
+            'diam_tool'     : params['finishing']['diam_tool'],
+            'margin'        : params['finishing']['margin'],
+            'step_size'     : params['finishing']['step_size'],
+            'tab_thickness' : params['tab_thickness'],
+            'center_z'      : params['center_z'],
+            }
+    toolpath_annulus_data = flat_endmill.get_toolpath_annulus_data(toolpath_params)
+
+    for pos in pos_list:
+        start_z  = toolpath_annulus_data[0]['step_z'] + params['roughing']['margin']
+        routine_params = { 
+                'centerX'        : pos['x'],
+                'centerY'        : pos['y'],
+                'startZ'         : start_z,
+                'safeZ'          : params['safe_z'],
+                'startDwell'     : params['start_dwell'],
+                'toolpathData'   : toolpath_annulus_data,
+                'direction'      : 'ccw',
+                }
+        routine = SphereFinishingRoutine(routine_params)
+        prog.add(routine)
+
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.End(),comment=True)
+    return prog
 
 
 def create_roughing_program(params):
@@ -14,10 +167,10 @@ def create_roughing_program(params):
     prog = gcode_cmd.GCodeProg()
     prog.add(gcode_cmd.GenericStart())
     prog.add(gcode_cmd.Space())
-    prog.add(gcode_cmd.FeedRate(100.0))
+    prog.add(gcode_cmd.FeedRate(params['roughing']['feedrate']))
 
     pos_list = pocket_centers(params)
-    annulus_params = { 
+    toolpath_params = { 
             'diam_sphere'   : params['diam_sphere'],
             'diam_tool'     : params['roughing']['diam_tool'],
             'margin'        : params['roughing']['margin'],
@@ -25,13 +178,11 @@ def create_roughing_program(params):
             'tab_thickness' : params['tab_thickness'],
             'center_z'      : params['center_z'],
             }
-    toolpath_annulus_data = flat_endmill.get_toolpath_annulus_data(annulus_params)
+    toolpath_annulus_data = flat_endmill.get_toolpath_annulus_data(toolpath_params)
 
     toolpath_radii = [data['radius'] for data in toolpath_annulus_data]
     max_radius = max(toolpath_radii) + 0.5*params['roughing']['diam_tool']
     first_step_z  = toolpath_annulus_data[0]['step_z']
-
-
 
     for pos in pos_list:
         # Remove material down to first step
@@ -48,19 +199,19 @@ def create_roughing_program(params):
                 'maxCutDepth'    : params['roughing']['step_size'],
                 'toolDiam'       : params['roughing']['diam_tool'],
                 'direction'      : 'ccw',
-                'startDwell'     : 1.0,
+                'startDwell'     : params['start_dwell'],
                 }
         pocket = cnc_pocket.CircAnnulusPocketXY(annulus_params)
         prog.add(pocket)
 
+        # Rough out half sphere pocket
         last_step_z = first_step_z
-
         for data in toolpath_annulus_data:
 
             thickness = min(max_radius, max_radius - (data['radius'] - 0.5*params['roughing']['diam_tool']))
-            #print(thickness - params['roughing']['diam_tool'])
             if abs(thickness - params['roughing']['diam_tool']) < 1.0e-9:
                 thickness = params['roughing']['diam_tool']
+
             annulus_params = { 
                     'centerX'        : pos['x'], 
                     'centerY'        : pos['y'],
@@ -74,11 +225,118 @@ def create_roughing_program(params):
                     'maxCutDepth'    : params['roughing']['step_size'],
                     'toolDiam'       : params['roughing']['diam_tool'],
                     'direction'      : 'ccw',
-                    'startDwell'     : 1.0,
+                    'startDwell'     : params['start_dwell'],
                     }
             pocket = cnc_pocket.CircAnnulusPocketXY(annulus_params)
             prog.add(pocket)
             last_step_z = data['step_z']
+
+        # Final cut at sphere boundary to remove chamfer
+        thickness = params['roughing']['diam_tool']
+        radius = 0.5*params['diam_sphere'] + thickness
+        start_z = toolpath_annulus_data[-2]['step_z']
+        stop_z = toolpath_annulus_data[-1]['step_z']
+        annulus_params = { 
+                'centerX'        : pos['x'], 
+                'centerY'        : pos['y'],
+                'radius'         : radius,
+                'thickness'      : thickness,
+                'depth'          : abs(stop_z - start_z),
+                'startZ'         : start_z,
+                'safeZ'          : params['safe_z'],
+                'overlap'        : 0.5,
+                'overlapFinish'  : 0.5,
+                'maxCutDepth'    : params['roughing']['step_size'],
+                'toolDiam'       : params['roughing']['diam_tool'],
+                'direction'      : 'ccw',
+                'startDwell'     : params['start_dwell'],
+                }
+        pocket = cnc_pocket.CircAnnulusPocketXY(annulus_params)
+        prog.add(pocket)
+
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.End(),comment=True)
+    return prog
+
+
+def get_tabcut_data(params):
+    diam_sphere = params['diam_sphere']
+    diam_tool = params['finishing']['diam_tool']
+
+    num_tab = params['num_tab']
+    tab_thickness = params['tab_thickness']
+    tab_width = params['tab_width']
+
+    pos_list = pocket_centers(params)
+    toolpath_params = { 
+            'diam_sphere'   : params['diam_sphere'],
+            'diam_tool'     : params['finishing']['diam_tool'],
+            'margin'        : params['finishing']['margin'],
+            'step_size'     : params['finishing']['step_size'],
+            'tab_thickness' : params['tab_thickness'],
+            'center_z'      : params['center_z'],
+            }
+    toolpath_annulus_data = flat_endmill.get_toolpath_annulus_data(toolpath_params)
+
+    radius = 0.5*diam_sphere + 0.5*diam_tool
+    last_step_z = toolpath_annulus_data[-1]['step_z']
+    depth = params['tab_thickness'] + min([1.25*diam_tool,0.25*diam_sphere])
+
+    # Get arc requied for tab cuts
+    circumference = 2.0*np.pi*radius
+    total_tab_arc = num_tab*tab_width
+    total_cut_arc = circumference - total_tab_arc - num_tab*diam_tool
+    cut_arc = total_cut_arc/num_tab
+    cut_ang_rad = cut_arc/radius
+    cut_ang_deg = np.rad2deg(cut_ang_rad)
+
+    # Get angles for tab cuts
+    ang_step_deg = 360.0/float(num_tab)
+    ang_neg_list = [(-0.5*cut_ang_deg + ang_step_deg*i) for i in range(num_tab)] 
+    ang_pos_list = [( 0.5*cut_ang_deg + ang_step_deg*i) for i in range(num_tab)] 
+    ang_list = [(x,y) for x, y in zip(ang_neg_list, ang_pos_list)]
+
+    tabcut_data = []
+    for pos in pos_list:
+        center = (pos['x'], pos['y'])
+        for ang in ang_list:
+            tabcut_data.append({
+                'x'        : pos['x'], 
+                'y'        : pos['y'], 
+                'start_z'  : last_step_z,
+                'depth'    : depth, 
+                'radius'   : radius,
+                'angles'   : ang, 
+                })
+    return tabcut_data
+
+
+def create_tabcut_program(params):
+
+    prog = gcode_cmd.GCodeProg()
+    prog.add(gcode_cmd.GenericStart())
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.FeedRate(params['finishing']['feedrate']))
+
+    safe_z = params['safe_z']
+
+    tabcut_data = get_tabcut_data(params)
+
+    for data in tabcut_data:
+        tabcut_params = { 
+                'centerX'        : data['x'], 
+                'centerY'        : data['y'],
+                'radius'         : data['radius'],
+                'depth'          : data['depth'],
+                'startZ'         : data['start_z'],
+                'angles'         : data['angles'],
+                'safeZ'          : params['safe_z'],
+                'maxCutDepth'    : params['finishing']['step_size'],
+                'toolDiam'       : params['finishing']['diam_tool'],
+                'startDwell'     : params['start_dwell'],
+                }
+        arc = ArcRoutine(tabcut_params)
+        prog.add(arc)
 
     prog.add(gcode_cmd.Space())
     prog.add(gcode_cmd.End(),comment=True)
@@ -92,38 +350,40 @@ def create_roughing_program(params):
 def max_margin(params):
     return max(params['roughing']['margin'], params['finishing']['margin'])
 
+
 def max_diam_tool(params):
     return max(params['roughing']['diam_tool'], params['finishing']['diam_tool'])
+
 
 def pocket_outer_diam(params):
     return params['diam_sphere'] + 2*max_margin(params) + 2*max_diam_tool(params)
 
+
 def linear_positions(pocket_diam, num_pocket, bridge_width):
-    pos_init =  2*bridge_width + 0.5*pocket_diam
+    pos_init = 0.0
     pos_list = [pos_init]
     for i in range(1,num_pocket):
         pos_list.append(pos_list[i-1] + pocket_diam + bridge_width)
     return pos_list
 
+
 def pocket_centers(params):
     pocket_diam = pocket_outer_diam(params)
     pos_x = linear_positions(pocket_diam, params['num_x'], params['bridge_width'])
     pos_y = linear_positions(pocket_diam, params['num_y'], params['bridge_width'])
-    pos_xy = [{'x': x, 'y': y} for x in pos_x for y in pos_y]
+    delta_x = max(pos_x) - min(pos_x)
+    delta_y = max(pos_y) - min(pos_y)
+    stock_x = params['stockcut']['cut_sheet_x']
+    stock_y = params['stockcut']['cut_sheet_y']
+    pos_xy = [{'x': x + 0.5*stock_x - 0.5*delta_x, 'y': y + 0.5*stock_y -0.5*delta_y} for x in pos_x for y in pos_y]
     return pos_xy
 
+
 def material_rect(params):
-    pos_xy = pocket_centers(params)
-    pos_x = [p['x'] for p in pos_xy]
-    pos_y = [p['y'] for p in pos_xy]
-    pocket_diam = params['diam_sphere'] + 2*max_margin(params) + 2*max_diam_tool(params)
-    delta = 2*params['bridge_width'] + 0.5*pocket_diam
-    min_x = min(pos_x) - delta
-    max_x = max(pos_x) + delta
-    min_y = min(pos_y) - delta
-    max_y = max(pos_y) + delta
-    width = max_x - min_x
-    height = max_y - min_y
+    min_x = 0.0
+    min_y = 0.0
+    width = params['stockcut']['cut_sheet_x']
+    height = params['stockcut']['cut_sheet_y']
     return {'x': min_x, 'y': min_y, 'w':  width, 'h': height}
 
 
@@ -140,11 +400,13 @@ def plot_material_boundary(params,color='r'):
     yvals = [y0,y0,y1,y1,y0]
     plt.plot(xvals,yvals,color)
 
+
 def plot_pocket_centers(params,color='b'):
     pos_list = pocket_centers(params)
     xvals = [p['x'] for p in pos_list]
     yvals = [p['y'] for p in pos_list]
     plt.plot(xvals,yvals,color+'o')
+
 
 def plot_pocket_boundaries(params,color='g'): 
     diam = pocket_outer_diam(params)
@@ -154,6 +416,7 @@ def plot_pocket_boundaries(params,color='g'):
     circ_y = 0.5*diam*np.sin(2.0*np.pi*t)
     for p in pos_list:
         plt.plot(circ_x + p['x'], circ_y + p['y'], color)
+
 
 def plot_spheres(params,color='m'):
     diam = params['diam_sphere']
@@ -165,75 +428,161 @@ def plot_spheres(params,color='m'):
         plt.plot(circ_x + p['x'], circ_y + p['y'], color)
 
 
+def plot_tabcut(params,color='y'):
+    tabcut_data = get_tabcut_data(params)
+    diam_tool = params['finishing']['diam_tool']
+
+    for data in tabcut_data:
+
+        radius_mid = data['radius']
+        radius_inner = radius_mid - 0.5*diam_tool
+        radius_outer = radius_mid + 0.5*diam_tool
+
+        ang0, ang1 = map(np.deg2rad, data['angles'])
+        t_arc = np.linspace(ang0,ang1)
+        cx_arc = data['x']
+        cy_arc = data['y']
+
+        for radius in (radius_inner, radius_outer):
+            x_arc = cx_arc + radius*np.cos(t_arc)
+            y_arc = cy_arc + radius*np.sin(t_arc)
+            plt.plot(x_arc,y_arc,color)
+
+        t_end = np.linspace(0,2.0*np.pi)
+        for ang in (ang0,ang1):
+            cx_end = cx_arc + radius_mid*np.cos(ang)
+            cy_end = cy_arc + radius_mid*np.sin(ang)
+            x_end = cx_end + 0.5*diam_tool*np.cos(t_end)
+            y_end = cy_end + 0.5*diam_tool*np.sin(t_end)
+            plt.plot(x_end, y_end, color)
+
+
+
+
+
+        
+
+
+
+def plot_sphere_array(params, fignum=1): 
+    plt.figure(fignum)
+    plot_pocket_centers(params)
+    plot_material_boundary(params)
+    plot_pocket_boundaries(params)
+    plot_spheres(params)
+    plot_tabcut(params)
+    plt.title('sphere array')
+    plt.xlabel('x (in)')
+    plt.ylabel('y (in)')
+    plt.axis('equal')
+
+
+
+def plot_raw_sheet(params,color='k'):
+    x0 = 0.0
+    y0 = 0.0
+    x1 = params['stockcut']['raw_sheet_x']
+    y1 = params['stockcut']['raw_sheet_y']
+    plt.plot([x0,x1,x1,x0,x0],[y0,y0,y1,y1,y0],color)
+
+
+def plot_stockcut(params,fignum=2):
+    pocket_data = get_stockcut_pocket_data(params)
+    plt.figure(fignum)
+    plot_raw_sheet(params)
+    for data in pocket_data:
+        x0 = data['x']
+        y0 = data['y']
+        x1 = x0 + data['w']
+        y1 = y0 + data['h']
+        plt.plot([x0,x1,x1,x0,x0],[y0,y0,y1,y1,y0],'b')
+    plt.axis('equal')
+    plt.xlabel('x')
+    plt.ylabel('u')
+    plt.title('stockcut')
+
+
+
 
 # -------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
 
-    
+    import copy
+
     params = {
-        'num_x'          : 3,
-        'num_y'          : 5,
+        'num_x'          : 4,
+        'num_y'          : 2,
         'diam_sphere'    : mm_to_inch(12.0),
-        'tab_thickness'  : 0.01,
+        'num_tab'        : 3,
+        'tab_thickness'  : 0.02,
+        'tab_width'      : 0.1,
         'bridge_width'   : 0.2,
+        'boundary_pad'   : 0.6,
         'center_z'       : -0.75/2.0,
-        'safe_z'         : 0.5,
+        'safe_z'         : 0.25,
+        'start_dwell'    : 2.0,
         'roughing' : {
-            'diam_tool'  : 1.0/3.0,
+            'feedrate'   : 60.0,
+            'diam_tool'  : 1.0/4.0,
             'margin'     : 0.01,
-            'step_size'  : 0.1,
+            'step_size'  : 0.05,
             },
         'finishing': {
+            'feedrate'   : 40.0,
             'diam_tool'  : 1.0/8.0,
             'margin'     : 0.0,
             'step_size'  : 0.01,
             },
+        'stockcut': {
+            'thickness'    : 0.75,
+            'spacing_fact' : 1.25,
+            'overcut'      : 0.05,
+            'raw_sheet_x'  : 24.0,  # raw sheet size
+            'raw_sheet_y'  : 12.0,
+            'cut_sheet_x'  : 6.25,  # cut sheet size
+            'cut_sheet_y'  : 2.75,
+            'feedrate'     : 100.0,
+            'diam_tool'    : 3.0/8.0,
+            'step_size'    : 0.10,
+            },
+        'jigcut': {
+            'margin'    : 2.0,
+            'depth'     : 0.2,
+            'feedrate'  : 100.0,
+            'diam_tool' : 0.5,
+            'step_size' : 0.05,
+            },
         }
 
-    if 0:
-        plot_pocket_centers(params)
-        plot_material_boundary(params)
-        plot_pocket_boundaries(params)
-        plot_spheres(params)
-        plt.axis('equal')
+    if 1:
+        params_tmp = copy.deepcopy(params)
+        params_tmp['stockcut']['thickness'] = 0.15
+        stockcut_shallow = create_stockcut_program(params_tmp)
+        stockcut_shallow.write('stockcut_shallow.ngc')
+
+    if 1:
+        stockcut = create_stockcut_program(params)
+        stockcut.write('stockcut.ngc')
+
+    if 1:
+        jigcut = create_jigcut_program(params)
+        jigcut.write('jigcut.ngc')
+
+    if 1:
+        roughing = create_roughing_program(params)
+        roughing.write('roughing.ngc')
+
+    if 1:
+        finishing = create_finishing_program(params)
+        finishing.write('finishing.ngc')
+
+    if 1:
+        tabcut = create_tabcut_program(params)
+        tabcut.write('tabcut.ngc')
+
+    if 1:
+        plot_sphere_array(params,fignum=1)
+        #plot_stockcut(params,fignum=2)
         plt.show()
 
-    prog = create_roughing_program(params)
-    #print(prog)
-    prog.write('test.ngc')
 
-
-
-    
-
-    
-
-
-#prog = gcode_cmd.GCodeProg()
-#prog.add(gcode_cmd.GenericStart())
-#prog.add(gcode_cmd.Space())
-#prog.add(gcode_cmd.FeedRate(100.0))
-#
-#param = { 
-#        'centerX'        : 0.0, 
-#        'centerY'        : 0.0,
-#        'radius'         : 1.0,
-#        'thickness'      : 0.4,
-#        'depth'          : 0.4,
-#        'startZ'         : 0.0,
-#        'safeZ'          : 0.5,
-#        'overlap'        : 0.5,
-#        'overlapFinish'  : 0.5,
-#        'maxCutDepth'    : 0.2,
-#        'toolDiam'       : 0.125,
-#        'direction'      : 'ccw',
-#        'startDwell'     : 1.0,
-#        }
-#
-#pocket = cnc_pocket.CircAnnulusPocketXY(param)
-#
-#prog.add(pocket)
-#prog.add(gcode_cmd.Space())
-#prog.add(gcode_cmd.End(),comment=True)
-#print(prog)
-#prog.write('test.ngc')
