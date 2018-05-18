@@ -535,13 +535,13 @@ if __name__ == '__main__':
     import copy
 
     params = {
-        #'num_x'          : 4,
-        #'num_y'          : 2,
-        'num_x'          : 1,
-        'num_y'          : 1,
+        'num_x'          : 4,
+        'num_y'          : 2,
+        #'num_x'          : 1,
+        #'num_y'          : 1,
         'diam_sphere'    : mm_to_inch(12.0),
         'num_tab'        : 3,
-        'tab_thickness'  : 0.08,
+        'tab_thickness'  : 0.02, # 0.02 too small (almost works), 0.08 too big
         'tab_width'      : 0.15,
         'bridge_width'   : 0.2,
         'boundary_pad'   : 0.6,
@@ -577,25 +577,25 @@ if __name__ == '__main__':
             'feedrate'   : 40.0,
             'diam_tool'  : 1.0/8.0,
             'margin'     : 0.0,
-            'step_size'  : 0.005,
+            'step_size'  : 0.01,
             },
         }
 
-    if 0:
+    if 1:
         params_tmp = copy.deepcopy(params)
         params_tmp['stockcut']['thickness'] = 0.15
         stockcut_shallow = create_stockcut_program(params_tmp)
         stockcut_shallow.write('stockcut_shallow.ngc')
 
-    if 0:
+    if 1:
         stockcut = create_stockcut_program(params)
         stockcut.write('stockcut.ngc')
 
-    if 0:
+    if 1:
         jigcut = create_jigcut_program(params)
         jigcut.write('jigcut.ngc')
 
-    if 0:
+    if 1:
         roughing = create_roughing_program(params)
         roughing.write('roughing.ngc')
 
@@ -603,11 +603,11 @@ if __name__ == '__main__':
         finishing = create_finishing_program(params)
         finishing.write('finishing.ngc')
 
-    if 0:
+    if 1:
         tabcut = create_tabcut_program(params)
         tabcut.write('tabcut.ngc')
 
-    if 0:
+    if 1:
         plot_sphere_array(params,fignum=1)
         plot_stockcut(params,fignum=2)
         plot_finishing_toolpos(params,fignum=3)

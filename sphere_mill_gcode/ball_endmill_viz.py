@@ -50,7 +50,7 @@ if __name__ == '__main__':
             'diam_tool'     : 1.0/8.0 ,
             'margin'        : 0.0,
             'step_size'     : 0.01,
-            'tab_thickness' : 0.01,
+            'tab_thickness' : 0.02,
             'center_z'      : -0.75/2.0,
             }
     
