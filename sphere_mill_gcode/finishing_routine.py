@@ -1,3 +1,4 @@
+from __future__ import print_function
 import py2gcode.gcode_cmd as gcode_cmd
 import py2gcode.cnc_path as cnc_path
 import py2gcode.cnc_routine as cnc_routine
@@ -38,6 +39,11 @@ class SphereFinishingRoutine(cnc_routine.SafeZRoutine):
             y0 = cy
             currZ = data['step_z']
 
+            #print('xx', data['radius'])
+            #self.listOfCmds.append(gcode_cmd.LinearFeed(z=currZ))
+            #moveToStartCmd = gcode_cmd.LinearFeed(x=x0,y=y0)
+            #self.listOfCmds.append(moveToStartCmd)
+
             # Spiral Down
             self.addComment('leadin {0} '.format(i))
             moveToStartCmd = gcode_cmd.LinearFeed(x=x0,y=y0)
@@ -65,7 +71,6 @@ class SphereFinishingRoutine(cnc_routine.SafeZRoutine):
                     )
             self.listOfCmds.extend(circPath.listOfCmds)
             prevZ = currZ
-
 
         # Move to safe z and add end comment
         self.addRapidMoveToSafeZ()

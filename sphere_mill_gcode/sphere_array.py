@@ -8,10 +8,12 @@ import py2gcode.cnc_pocket as cnc_pocket
 import py2gcode.cnc_boundary as cnc_boundary
 
 import flat_endmill
+import ball_endmill_viz 
+import flat_endmill_viz
+
 from utility import mm_to_inch
 from finishing_routine import SphereFinishingRoutine
 from arc_routine import ArcRoutine
-
 
 def create_jigcut_program(params):
 
@@ -496,6 +498,35 @@ def plot_stockcut(params,fignum=2):
     plt.title('stockcut')
 
 
+def plot_finishing_toolpos(params,fignum=3):
+    plot_params = { 
+            'diam_sphere'   : params['diam_sphere'],
+            'diam_tool'     : params['finishing']['diam_tool'],
+            'margin'        : params['finishing']['margin'],
+            'step_size'     : params['finishing']['step_size'],
+            'tab_thickness' : params['tab_thickness'],
+            'center_z'      : params['center_z'],
+            }
+    plt.figure(fignum)
+    ball_endmill_viz.plot_spheremill_toolpos(plot_params) 
+    plt.axis('equal')
+    plt.grid('on')
+
+
+def plot_roughing_toolpos(param,fignum=4):
+    plot_params = { 
+            'diam_sphere'   : params['diam_sphere'],
+            'diam_tool'     : params['roughing']['diam_tool'],
+            'margin'        : params['roughing']['margin'],
+            'step_size'     : params['roughing']['step_size'],
+            'tab_thickness' : params['tab_thickness'],
+            'center_z'      : params['center_z'],
+            }
+    plt.figure(fignum)
+    flat_endmill_viz.plot_spheremill_toolpos(plot_params)
+    plt.axis('equal')
+    plt.grid('on')
+    plt.show()
 
 
 # -------------------------------------------------------------------------------------------------
@@ -504,8 +535,10 @@ if __name__ == '__main__':
     import copy
 
     params = {
-        'num_x'          : 4,
-        'num_y'          : 2,
+        #'num_x'          : 4,
+        #'num_y'          : 2,
+        'num_x'          : 1,
+        'num_y'          : 1,
         'diam_sphere'    : mm_to_inch(12.0),
         'num_tab'        : 3,
         'tab_thickness'  : 0.08,
@@ -544,25 +577,25 @@ if __name__ == '__main__':
             'feedrate'   : 40.0,
             'diam_tool'  : 1.0/8.0,
             'margin'     : 0.0,
-            'step_size'  : 0.01,
+            'step_size'  : 0.005,
             },
         }
 
-    if 1:
+    if 0:
         params_tmp = copy.deepcopy(params)
         params_tmp['stockcut']['thickness'] = 0.15
         stockcut_shallow = create_stockcut_program(params_tmp)
         stockcut_shallow.write('stockcut_shallow.ngc')
 
-    if 1:
+    if 0:
         stockcut = create_stockcut_program(params)
         stockcut.write('stockcut.ngc')
 
-    if 1:
+    if 0:
         jigcut = create_jigcut_program(params)
         jigcut.write('jigcut.ngc')
 
-    if 1:
+    if 0:
         roughing = create_roughing_program(params)
         roughing.write('roughing.ngc')
 
@@ -570,13 +603,15 @@ if __name__ == '__main__':
         finishing = create_finishing_program(params)
         finishing.write('finishing.ngc')
 
-    if 1:
+    if 0:
         tabcut = create_tabcut_program(params)
         tabcut.write('tabcut.ngc')
 
-    if 1:
+    if 0:
         plot_sphere_array(params,fignum=1)
         plot_stockcut(params,fignum=2)
+        plot_finishing_toolpos(params,fignum=3)
+        plot_roughing_toolpos(params,fignum=4)
         plt.show()
 
 
