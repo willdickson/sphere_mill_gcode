@@ -49,8 +49,6 @@ def plot_circle(cx,cy,radius,color='r',num_pts=500):
     plt.plot(x,y,color=color)
 
 
-
-
 def unit_vector((x,y)):
     vec_len = np.sqrt(x**2 + y**2)
     return x/vec_len, y/vec_len

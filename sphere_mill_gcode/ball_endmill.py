@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 from utility import get_num_steps
 from utility import get_equal_angle_steps
@@ -42,7 +43,9 @@ def get_toolpath_annulus_data(params):
     toolpath_data = []
     for step in step_array:
         toolpath_radius = get_toolpath_radius_from_step(diam_sphere, diam_tool, step, margin)
-        toolpath_data.append({'radius': toolpath_radius, 'step_z': step+offset_z})
+        item = {'radius': toolpath_radius, 'step_z': step+offset_z}
+        toolpath_data.append(item)
+        #print('toolpath_data: ', item)
     return toolpath_data
 
 

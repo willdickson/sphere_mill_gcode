@@ -39,37 +39,31 @@ class SphereFinishingRoutine(cnc_routine.SafeZRoutine):
             y0 = cy
             currZ = data['step_z']
 
-            #print('xx', data['radius'])
-            #self.listOfCmds.append(gcode_cmd.LinearFeed(z=currZ))
-            #moveToStartCmd = gcode_cmd.LinearFeed(x=x0,y=y0)
-            #self.listOfCmds.append(moveToStartCmd)
+            if data['radius'] > 1.0e-4: # Skip zero radius arcs
+                # Spiral Down
+                self.addComment('leadin {0} '.format(i))
+                leadInPath = cnc_path.CircPath(
+                        (cx,cy),
+                        data['radius'],
+                        startAng=0,
+                        plane='xy',
+                        direction=self.param['direction'],
+                        turns=1,
+                        helix=(prevZ,currZ)
+                        )
+                self.listOfCmds.extend(leadInPath.listOfCmds)
 
-            # Spiral Down
-            self.addComment('leadin {0} '.format(i))
-            moveToStartCmd = gcode_cmd.LinearFeed(x=x0,y=y0)
-            self.listOfCmds.append(moveToStartCmd)
-            leadInPath = cnc_path.CircPath(
-                    (cx,cy),
-                    data['radius'],
-                    startAng=0,
-                    plane='xy',
-                    direction=self.param['direction'],
-                    turns=1,
-                    helix=(prevZ,currZ)
-                    )
-            self.listOfCmds.extend(leadInPath.listOfCmds)
-
-            # Cut circle
-            self.addComment('cirle {0} '.format(i))
-            circPath = cnc_path.CircPath(
-                    (cx,cy),
-                    data['radius'],
-                    startAng=0,
-                    plane='xy',
-                    direction=self.param['direction'],
-                    turns=1
-                    )
-            self.listOfCmds.extend(circPath.listOfCmds)
+                # Cut circle
+                self.addComment('cirle {0} '.format(i))
+                circPath = cnc_path.CircPath(
+                        (cx,cy),
+                        data['radius'],
+                        startAng=0,
+                        plane='xy',
+                        direction=self.param['direction'],
+                        turns=1
+                        )
+                self.listOfCmds.extend(circPath.listOfCmds)
             prevZ = currZ
 
         # Move to safe z and add end comment
