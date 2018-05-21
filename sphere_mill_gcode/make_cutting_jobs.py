@@ -10,7 +10,7 @@ params = {
     #'num_y'          : 1,
     'diam_sphere'    : mm_to_inch(12.0),
     'num_tab'        : 3,
-    'tab_thickness'  : 0.02, # 0.02 too small (almost works), 0.08 too big
+    'tab_thickness'  : 0.05, # 0.02 too small (almost works), 0.08 too big
     'tab_width'      : 0.15,
     'bridge_width'   : 0.2,
     'boundary_pad'   : 0.6,
