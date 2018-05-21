@@ -34,7 +34,7 @@ def plot_spheremill_toolpos(params):
             plot_circle(radius, step_z+0.5*diam_tool, 0.5*diam_tool,color='g')
             plt.plot([radius], [step_z+0.5*diam_tool], '.g')
             plt.plot([radius], [step_z], 'xr')
-            plt.plot([radius, 0.0], [step_z+0.5*diam_tool,params['center_z']], 'r') 
+            #plt.plot([radius, 0.0], [step_z+0.5*diam_tool,params['center_z']], 'r') 
 
     # Plot material boundaries
     dx = 2*params['diam_sphere']

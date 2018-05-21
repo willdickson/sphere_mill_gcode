@@ -377,13 +377,16 @@ def pocket_centers(params):
     delta_y = max(pos_y) - min(pos_y)
     stock_x = params['stockcut']['cut_sheet_x']
     stock_y = params['stockcut']['cut_sheet_y']
-    pos_xy = [{'x': x + 0.5*stock_x - 0.5*delta_x, 'y': y + 0.5*stock_y -0.5*delta_y} for x in pos_x for y in pos_y]
+    #pos_xy = [{'x': x + 0.5*stock_x - 0.5*delta_x, 'y': y + 0.5*stock_y -0.5*delta_y} for x in pos_x for y in pos_y]
+    pos_xy = [{'x': x - 0.5*delta_x, 'y': y - 0.5*delta_y} for x in pos_x for y in pos_y]
     return pos_xy
 
 
 def material_rect(params):
-    min_x = 0.0
-    min_y = 0.0
+    #min_x = 0.0
+    #min_y = 0.0
+    min_x = -0.5*params['stockcut']['cut_sheet_x']
+    min_y = -0.5*params['stockcut']['cut_sheet_y']
     width = params['stockcut']['cut_sheet_x']
     height = params['stockcut']['cut_sheet_y']
     return {'x': min_x, 'y': min_y, 'w':  width, 'h': height}
@@ -467,6 +470,7 @@ def plot_sphere_array(params, fignum=1):
     plot_pocket_boundaries(params)
     plot_spheres(params)
     plot_tabcut(params)
+    plt.plot([0],[0],'+k')
     plt.title('sphere array')
     plt.xlabel('x (in)')
     plt.ylabel('y (in)')
