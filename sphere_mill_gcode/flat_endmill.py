@@ -13,7 +13,9 @@ def get_toolpath_radius_from_step(diam_sphere, diam_tool, step, margin):
 
     radius_effective = 0.5*diam_sphere + margin
     radius_tool = 0.5*diam_tool
-    return np.sqrt(radius_effective**2 - (radius_effective + step-margin)**2) + radius_tool 
+    radius_edge = max((radius_effective**2 - (radius_effective + step-margin)**2),0)
+    return np.sqrt(radius_edge) + radius_tool 
+    #return np.sqrt(radius_effective**2 - (radius_effective + step-margin)**2) + radius_tool 
 
 def get_toolpath_annulus_data(params): 
     """

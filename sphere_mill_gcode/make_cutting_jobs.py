@@ -6,11 +6,11 @@ from sphere_array import *
 params = {
     'num_x'          : 4,
     'num_y'          : 2,
-    #'num_x'          : 1,
-    #'num_y'          : 1,
     'diam_sphere'    : mm_to_inch(12.0),
+    #'diam_sphere'    : mm_to_inch(10.0),
     'num_tab'        : 3,
-    'tab_thickness'  : 0.05, # 0.02 too small (almost works), 0.08 too big
+    #'tab_thickness'  : 0.05, # 0.02 too small (almost works), 0.08 too big
+    'tab_thickness'  : 0.04, # 0.02 too small (almost works), 0.08 too big
     'tab_width'      : 0.15,
     'bridge_width'   : 0.2,
     'boundary_pad'   : 0.6,
@@ -25,8 +25,6 @@ params = {
         'raw_sheet_y'  : 12.0,
         'cut_sheet_x'  : 6.25,  # cut sheet size
         'cut_sheet_y'  : 2.75,
-        #'cut_sheet_x'  : 2.0,  # cut sheet size
-        #'cut_sheet_y'  : 2.0,
         'feedrate'     : 100.0,
         'diam_tool'    : 3.0/8.0,
         'step_size'    : 0.15,
