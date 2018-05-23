@@ -50,33 +50,37 @@ params = {
         },
     }
 
-if 1:
+if 0:
     params_tmp = copy.deepcopy(params)
     params_tmp['stockcut']['thickness'] = 0.15
     stockcut_shallow = create_stockcut_program(params_tmp)
     stockcut_shallow.write('stockcut_shallow.ngc')
 
-if 1:
+if 0:
     stockcut = create_stockcut_program(params)
     stockcut.write('stockcut.ngc')
 
-if 1:
+if 0:
     jigcut = create_jigcut_program(params)
     jigcut.write('jigcut.ngc')
 
-if 1:
+if 0:
     roughing = create_roughing_program(params)
     roughing.write('roughing.ngc')
 
-if 1:
+if 0:
     finishing = create_finishing_program(params)
     finishing.write('finishing.ngc')
 
-if 1:
+if 0:
     tabcut = create_tabcut_program(params)
     tabcut.write('tabcut.ngc')
 
 if 1:
+    tabcut = create_tabcut_program(params,remove=True,pos_nums=[5,6])
+    tabcut.write('tabremove.ngc')
+
+if 0:
     plot_sphere_array(params,fignum=1)
     plot_stockcut(params,fignum=2)
     plot_finishing_toolpos(params,fignum=3)

@@ -261,7 +261,7 @@ def create_roughing_program(params):
     return prog
 
 
-def get_tabcut_data(params):
+def get_tabcut_data(params,remove=False,pos_nums=None):
     diam_sphere = params['diam_sphere']
     diam_tool = params['finishing']['diam_tool']
 
@@ -296,11 +296,18 @@ def get_tabcut_data(params):
     ang_step_deg = 360.0/float(num_tab)
     ang_neg_list = [(-0.5*cut_ang_deg + ang_step_deg*i) for i in range(num_tab)] 
     ang_pos_list = [( 0.5*cut_ang_deg + ang_step_deg*i) for i in range(num_tab)] 
-    ang_list = [(x,y) for x, y in zip(ang_neg_list, ang_pos_list)]
+    if not remove:
+        ang_list = [(x,y) for x, y in zip(ang_neg_list, ang_pos_list)]
+    else:
+        ang_neg_list.append(ang_neg_list[0])
+        ang_neg_list = ang_neg_list[1:]
+        ang_list = [(x,y) for x, y in zip(ang_pos_list, ang_neg_list)]
 
     tabcut_data = []
-    for pos in pos_list:
+    for i,pos in enumerate(pos_list):
         center = (pos['x'], pos['y'])
+        if (pos_nums is not None) and (i not in pos_nums):
+            continue
         for ang in ang_list:
             tabcut_data.append({
                 'x'        : pos['x'], 
@@ -313,7 +320,7 @@ def get_tabcut_data(params):
     return tabcut_data
 
 
-def create_tabcut_program(params):
+def create_tabcut_program(params,remove=False, pos_nums=None):
 
     prog = gcode_cmd.GCodeProg()
     prog.add(gcode_cmd.GenericStart())
@@ -322,7 +329,7 @@ def create_tabcut_program(params):
 
     safe_z = params['safe_z']
 
-    tabcut_data = get_tabcut_data(params)
+    tabcut_data = get_tabcut_data(params,remove=remove,pos_nums=pos_nums)
 
     for data in tabcut_data:
         tabcut_params = { 
@@ -345,6 +352,11 @@ def create_tabcut_program(params):
     return prog
 
 
+def get_tab_remove_data(params):
+    tabcut_data = get_tabcut_data(params, remove=True)
+
+    for data in tabcut_data:
+        pass
 
 # Pocket array functions
 # --------------------------------------------------------------------------------------------------
