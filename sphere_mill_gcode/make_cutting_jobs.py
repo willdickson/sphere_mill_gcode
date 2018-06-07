@@ -24,7 +24,7 @@ params = {
         'spacing_fact' : 1.25,
         'overcut'      : 0.05,
         'drill_inset'  : 0.40,
-        'drill_step'   : 0.20,
+        'drill_step'   : 0.10,
         'raw_sheet_x'  : 24.0,  # raw sheet size
         'raw_sheet_y'  : 12.0,
         'cut_sheet_x'  : 6.25,  # cut sheet size
@@ -71,6 +71,10 @@ if 1:
 if 1:
     jigcut = create_jigcut_program(params)
     jigcut.write('jigcut.ngc')
+
+if 1:
+    align_drill = create_alignment_drill(params)
+    align_drill.write('align_drill.ngc')
 
 if 1:
     roughing = create_roughing_program(params)

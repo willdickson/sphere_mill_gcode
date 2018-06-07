@@ -59,6 +59,37 @@ def create_jigcut_program(params):
     return prog
 
 
+def create_alignment_drill(params):
+    prog = gcode_cmd.GCodeProg()
+    prog.add(gcode_cmd.GenericStart())
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.FeedRate(params['stockcut']['feedrate']))
+
+    thickness = params['stockcut']['thickness']
+    overcut = params['stockcut']['overcut']
+    drill_step = params['stockcut']['drill_step']
+    start_dwell = params['start_dwell']
+    safe_z = params['safe_z']
+    start_z = 0.0 
+
+    param = {
+            'centerX'      : 0.0, 
+            'centerY'      : 0.0, 
+            'startZ'       : start_z,
+            'stopZ'        : start_z - (thickness + 2*overcut),
+            'safeZ'        : safe_z,
+            'stepZ'        : drill_step,
+            'startDwell'   : start_dwell,
+            }
+
+    drill = cnc_drill.PeckDrill(param)
+    prog.add(drill)
+
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.End(),comment=True)
+    return prog
+
+
 def create_stockcut_drill(params):
     prog = gcode_cmd.GCodeProg()
     prog.add(gcode_cmd.GenericStart())
@@ -72,8 +103,8 @@ def create_stockcut_drill(params):
     start_dwell = params['start_dwell']
     drill_step = params['stockcut']['drill_step']
     drill_inset = params['stockcut']['drill_inset']
-    start_z = 0.0 
     safe_z = params['safe_z']
+    start_z = 0.0 
 
     pocket_data = get_stockcut_pocket_data(params)
     
