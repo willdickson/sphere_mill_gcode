@@ -6,6 +6,7 @@ import py2gcode.gcode_cmd as gcode_cmd
 import py2gcode.cnc_path as cnc_path
 import py2gcode.cnc_pocket as cnc_pocket
 import py2gcode.cnc_boundary as cnc_boundary
+import py2gcode.cnc_drill as cnc_drill
 
 import flat_endmill
 import ball_endmill
@@ -57,6 +58,47 @@ def create_jigcut_program(params):
     prog.add(gcode_cmd.End(),comment=True)
     return prog
 
+
+def create_stockcut_drill(params):
+    prog = gcode_cmd.GCodeProg()
+    prog.add(gcode_cmd.GenericStart())
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.FeedRate(params['stockcut']['feedrate']))
+
+    thickness = params['stockcut']['thickness']
+    overcut = params['stockcut']['overcut']
+    diam_tool = params['stockcut']['diam_tool']
+    step_size = params['stockcut']['step_size']
+    start_dwell = params['start_dwell']
+    drill_step = params['stockcut']['drill_step']
+    drill_inset = params['stockcut']['drill_inset']
+    start_z = 0.0 
+    safe_z = params['safe_z']
+
+    pocket_data = get_stockcut_pocket_data(params)
+    
+    for data in pocket_data:
+        for i in (-1,1):
+            for j in (-1,1):
+                cx = data['x'] + 0.5*data['w'] + i*(0.5*data['w'] - drill_inset)
+                cy = data['y'] + 0.5*data['h'] + j*(0.5*data['h'] - drill_inset)
+
+                param = {
+                        'centerX'      : cx, 
+                        'centerY'      : cy, 
+                        'startZ'       : start_z,
+                        'stopZ'        : start_z - (thickness + overcut),
+                        'safeZ'        : safe_z,
+                        'stepZ'        : drill_step,
+                        'startDwell'   : start_dwell,
+                        }
+
+                drill = cnc_drill.PeckDrill(param)
+                prog.add(drill)
+
+    prog.add(gcode_cmd.Space())
+    prog.add(gcode_cmd.End(),comment=True)
+    return prog
 
 
 def create_stockcut_program(params):
