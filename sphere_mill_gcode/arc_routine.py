@@ -24,6 +24,11 @@ class ArcRoutine(cnc_routine.SafeZRoutine):
         angles = self.param['angles']
         radius = self.param['radius']
         depth = self.param['depth']
+        if callable(self.param['radius']):
+            radius_func = self.param['radius']
+        else:
+            print('not callable')
+            radius_func = lambda z : radius
 
         # Move to safe height, then to start x,y and then to start z
         self.addStartComment()
@@ -39,8 +44,8 @@ class ArcRoutine(cnc_routine.SafeZRoutine):
         passCnt = 0
         anglesRev = list(reversed(angles))
 
-        x = cx + radius*np.cos(np.deg2rad(angles[0]))
-        y = cy + radius*np.sin(np.deg2rad(angles[0]))
+        x = cx + radius_func(currZ)*np.cos(np.deg2rad(angles[0]))
+        y = cy + radius_func(currZ)*np.sin(np.deg2rad(angles[0]))
         self.addRapidMoveToSafeZ()
         self.addRapidMoveToPos(x=x,y=y,comment='start x,y')
         self.addDwell(startDwell)
@@ -54,7 +59,7 @@ class ArcRoutine(cnc_routine.SafeZRoutine):
                 self.addComment('arc {0} {1} '.format(passCnt,direction))
                 leadInPath = cnc_path.CircArcPath(
                         (cx,cy),
-                        radius,
+                        radius_func(currZ),
                         ang=anglesTmp,
                         plane='xy',
                         direction = direction,

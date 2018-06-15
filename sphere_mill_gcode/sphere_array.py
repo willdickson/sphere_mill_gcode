@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import functools
 import numpy as np
 import matplotlib.pyplot as plt
 import py2gcode.gcode_cmd as gcode_cmd
@@ -334,7 +335,7 @@ def create_roughing_program(params):
     return prog
 
 
-def get_tabcut_data(params,remove=False,pos_nums=None):
+def get_tabcut_data(params,remove=False,pos_nums=None,contour=False):
     diam_sphere = params['diam_sphere']
     diam_tool = params['finishing']['diam_tool']
 
@@ -376,6 +377,23 @@ def get_tabcut_data(params,remove=False,pos_nums=None):
         ang_neg_list = ang_neg_list[1:]
         ang_list = [(x,y) for x, y in zip(ang_pos_list, ang_neg_list)]
 
+    if contour:
+        def contour_radius_func(z):
+            offset_z = params['center_z'] + 0.5*diam_sphere
+            step = z - offset_z
+            contour_radius = ball_endmill.get_toolpath_radius_from_step(
+                    diam_sphere, 
+                    diam_tool, 
+                    step, 
+                    params['finishing']['margin']
+                    )
+            return contour_radius
+
+        tabcut_radius = contour_radius_func
+    else:
+        tabcut_radius = radius
+
+
     tabcut_data = []
     for i,pos in enumerate(pos_list):
         center = (pos['x'], pos['y'])
@@ -387,13 +405,13 @@ def get_tabcut_data(params,remove=False,pos_nums=None):
                 'y'        : pos['y'], 
                 'start_z'  : last_step_z,
                 'depth'    : depth, 
-                'radius'   : radius,
+                'radius'   : tabcut_radius,
                 'angles'   : ang, 
                 })
     return tabcut_data
 
 
-def create_tabcut_program(params,remove=False, pos_nums=None):
+def create_tabcut_program(params,remove=False,pos_nums=None,contour=False):
 
     prog = gcode_cmd.GCodeProg()
     prog.add(gcode_cmd.GenericStart())
@@ -402,7 +420,7 @@ def create_tabcut_program(params,remove=False, pos_nums=None):
 
     safe_z = params['safe_z']
 
-    tabcut_data = get_tabcut_data(params,remove=remove,pos_nums=pos_nums)
+    tabcut_data = get_tabcut_data(params,remove=remove,pos_nums=pos_nums,contour=contour)
 
     for data in tabcut_data:
         tabcut_params = { 
@@ -424,12 +442,6 @@ def create_tabcut_program(params,remove=False, pos_nums=None):
     prog.add(gcode_cmd.End(),comment=True)
     return prog
 
-
-def get_tab_remove_data(params):
-    tabcut_data = get_tabcut_data(params, remove=True)
-
-    for data in tabcut_data:
-        pass
 
 # Pocket array functions
 # --------------------------------------------------------------------------------------------------

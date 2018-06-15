@@ -12,7 +12,10 @@ def get_toolpath_radius_from_step(diam_sphere, diam_tool, step, margin):
     """
     diam_effective = diam_sphere + 2*margin
     tool_dist = 0.5*diam_effective + 0.5*diam_tool
-    radius_cut = np.sqrt(tool_dist**2 - (tool_dist + (step-margin))**2)
+    if step > -(0.5*diam_sphere + 0.5*diam_tool):
+        radius_cut = np.sqrt(tool_dist**2 - (tool_dist + (step-margin))**2)
+    else:
+        radius_cut = 0.5*diam_sphere + 0.5*diam_tool + margin
     return radius_cut
 
 
@@ -47,6 +50,38 @@ def get_toolpath_annulus_data(params):
         toolpath_data.append(item)
         #print('toolpath_data: ', item)
     return toolpath_data
+
+
+# ----------------------------------------------------------------------------------------------
+if __name__ == '__main__':
+
+    import numpy
+    import matplotlib.pyplot as plt
+
+    diam_sphere = 10.0 
+    diam_tool = 0.125  
+    margin = 0.0
+
+    step_vals = numpy.linspace(margin, -diam_sphere, 100)
+
+    r_vals = []
+    for step in step_vals:
+        r = get_toolpath_radius_from_step(diam_sphere, diam_tool, step, margin)
+        print(step,r)
+        r_vals.append(r)
+
+    r_vals = numpy.array(r_vals)
+
+    plt.plot(step_vals, r_vals)
+    plt.xlabel('step')
+    plt.ylabel('radius')
+    plt.grid('on')
+    plt.axis('equal')
+    plt.show()
+
+
+
+
 
 
 
