@@ -55,23 +55,33 @@ class ArcRoutine(cnc_routine.SafeZRoutine):
 
         while not done:
             passCnt+=1
-            for direction, anglesTmp in zip(('ccw', 'cw'),(angles, anglesRev)):
-                self.addComment('arc {0} {1} '.format(passCnt,direction))
-                leadInPath = cnc_path.CircArcPath(
-                        (cx,cy),
-                        radius_func(currZ),
-                        ang=anglesTmp,
-                        plane='xy',
-                        direction = direction,
-                        helix=(prevZ,currZ)
-                        )
-                self.listOfCmds.extend(leadInPath.listOfCmds)
+            self.addComment('arc {0} {1} '.format(passCnt,'ccw'))
+            leadInPath = cnc_path.CircArcPath(
+                    (cx,cy),
+                    radius_func(currZ),
+                    ang=angles,
+                    plane='xy',
+                    direction = 'ccw',
+                    helix=(prevZ,currZ)
+                    )
+            self.listOfCmds.extend(leadInPath.listOfCmds)
 
-                # Get next z position
-                if currZ <= stopZ:
-                    done = True
-                prevZ = currZ
-                currZ = max([currZ - 0.5*maxCutDepth, stopZ])
+            self.addComment('arc {0} {1} '.format(passCnt,'cw'))
+            arcPath = cnc_path.CircArcPath(
+                    (cx,cy),
+                    radius_func(currZ),
+                    ang=anglesRev,
+                    plane='xy',
+                    direction = 'cw',
+                    helix=(currZ,currZ)
+                    )
+            self.listOfCmds.extend(arcPath.listOfCmds)
+
+            # Get next z position
+            if currZ <= stopZ:
+                done = True
+            prevZ = currZ
+            currZ = max([currZ - 0.5*maxCutDepth, stopZ])
 
         # Move to safe z and add end comment
         self.addRapidMoveToSafeZ()

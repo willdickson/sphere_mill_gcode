@@ -3,21 +3,22 @@ import matplotlib.pyplot as plt
 from utility import mm_to_inch
 from sphere_array import *
 
+diam_sphere_mm = 9.0
+
 params = {
     'num_x'          : 4,
     'num_y'          : 2,
-    #'diam_sphere'    : mm_to_inch(12.0),
-    'diam_sphere'    : mm_to_inch(10.0),
+    'diam_sphere'    : mm_to_inch(diam_sphere_mm),
     'num_tab'        : 3,
-    'tab_thickness'  : 0.06, # 0.02 too small (almost works), 0.08 too big
+    'tab_thickness'  : 0.5*mm_to_inch(diam_sphere_mm), # 0.02 too small (almost works), 0.08 too big
     'tab_width'      : 0.15,
     'bridge_width'   : 0.2,
     'boundary_pad'   : 0.6,
-    'center_z'       : -1.0/2.0,
+    'center_z'       : -1.01/2.0,
     'safe_z'         : 0.25,
     'start_dwell'    : 2.0,
     'stockcut': {
-        'thickness'    : 1.0,
+        'thickness'    : 1.01,
         'spacing_fact' : 1.25,
         'overcut'      : 0.05,
         'drill_inset'  : 0.40,
@@ -31,7 +32,7 @@ params = {
         'step_size'    : 0.15,
         },
     'jigcut': {
-        'margin'    : 2.0,
+        'margin'    : 2.25,
         'depth'     : 0.15,
         'feedrate'  : 100.0,
         'diam_tool' : 1.5,
@@ -96,9 +97,14 @@ if 1:
     tabcut.write('tabcut.ngc')
 
 if 1:
-    pos_nums = [5,6]
+    #pos_nums = [5,6]
+    pos_nums = [0,3,4,7]
     tabcut = create_tabcut_program(params,remove=True,contour=True,pos_nums=pos_nums)
-    tabcut.write('tabremove.ngc')
+    tabcut.write('tabremove_0.ngc')
+
+    pos_nums = [1,2,5,6]
+    tabcut = create_tabcut_program(params,remove=True,contour=True,pos_nums=pos_nums)
+    tabcut.write('tabremove_1.ngc')
 
 if 0:
     plot_sphere_array(params,fignum=1)
