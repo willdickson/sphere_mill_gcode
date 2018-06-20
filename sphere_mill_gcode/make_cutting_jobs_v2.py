@@ -14,11 +14,11 @@ params = {
     'tab_width'      : 0.15,
     'bridge_width'   : 0.2,
     'boundary_pad'   : 0.6,
-    'center_z'       : -1.01/2.0,
+    'center_z'       : -0.51/2.0,
     'safe_z'         : 0.25,
     'start_dwell'    : 2.0,
     'stockcut': {
-        'thickness'    : 1.01,
+        'thickness'    : 0.51,
         'spacing_fact' : 1.25,
         'overcut'      : 0.05,
         'drill_inset'  : 0.40,
@@ -106,7 +106,7 @@ if 1:
     tabcut = create_tabcut_program(params,remove=True,contour=True,pos_nums=pos_nums)
     tabcut.write('tabremove_1.ngc')
 
-if 0:
+if 1:
     plot_sphere_array(params,fignum=1)
     plot_stockcut(params,fignum=2)
     plot_finishing_toolpos(params,fignum=3)
